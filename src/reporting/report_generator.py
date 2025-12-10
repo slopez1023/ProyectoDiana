@@ -26,6 +26,7 @@ import numpy as np
 from typing import Dict, List, Optional
 import logging
 import os
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +39,12 @@ class PDFReportGenerator:
     para entidades públicas colombianas.
     """
     
-    def __init__(self, output_path: str, page_size=letter):
+    def __init__(self, output_path, page_size=letter):
         """
         Inicializa el generador de reportes.
         
         Args:
-            output_path (str): Ruta donde guardar el PDF
+            output_path: Ruta del archivo o BytesIO buffer donde guardar el PDF
             page_size: Tamaño de página (letter o A4)
         """
         self.output_path = output_path
@@ -61,7 +62,7 @@ class PDFReportGenerator:
         self.styles = getSampleStyleSheet()
         self._configurar_estilos()
         
-        logger.info(f"PDFReportGenerator inicializado: {output_path}")
+        logger.info(f"PDFReportGenerator inicializado")
     
     def _configurar_estilos(self):
         """Configura estilos personalizados para el documento."""
@@ -471,28 +472,43 @@ class PDFReportGenerator:
 def generar_informe_pdf(
     indicadores_list: List[Dict],
     analisis_list: List[Dict],
-    output_path: str,
+    output_path: Optional[str] = None,
     titulo: Optional[str] = None,
-    entidad: str = "Secretaría de Planeación"
-) -> bool:
+    entidad: str = "Alcaldía de Filandia",
+    incluir_graficos: bool = True,
+    incluir_estadisticas: bool = True
+) -> BytesIO:
     """
-    Función de conveniencia para generar un informe PDF completo.
+    Función de conveniencia para generar un informe PDF completo en memoria.
     
     Args:
         indicadores_list (List[Dict]): Lista de indicadores
         analisis_list (List[Dict]): Lista de análisis
-        output_path (str): Ruta de salida del PDF
+        output_path (str, optional): Ruta de salida del PDF (si None, retorna en memoria)
         titulo (str, optional): Título personalizado
         entidad (str): Nombre de la entidad
+        incluir_graficos (bool): Si incluir gráficos en el reporte
+        incluir_estadisticas (bool): Si incluir estadísticas detalladas
         
     Returns:
-        bool: True si se generó exitosamente, False en caso contrario
+        BytesIO: Buffer con el PDF generado en memoria
     """
-    # Crear directorio si no existe
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
     if titulo is None:
         titulo = f"Informe de Indicadores MIPG - {datetime.now().strftime('%B %Y')}"
     
-    generator = PDFReportGenerator(output_path)
-    return generator.generar_pdf(indicadores_list, analisis_list, titulo, entidad)
+    # Crear PDF en memoria
+    buffer = BytesIO()
+    
+    # Usar buffer en lugar de archivo
+    generator = PDFReportGenerator(buffer)
+    generator.generar_pdf(indicadores_list, analisis_list, titulo, entidad)
+    
+    # Si se especificó output_path, también guardar en disco
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'wb') as f:
+            f.write(buffer.getvalue())
+    
+    # Resetear posición del buffer
+    buffer.seek(0)
+    return buffer

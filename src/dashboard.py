@@ -182,8 +182,8 @@ def analizar_indicadores_bateria(indicadores_list):
 
 def mostrar_header():
     """Muestra el encabezado principal del dashboard."""
-    st.markdown('<div class="main-header">📊 Tablero de Control de Indicadores MIPG</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Secretaría de Planeación - Sistema de Gestión de Indicadores Institucionales</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">📊 Alcaldía de Filandia</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Tablero de Control de Indicadores MIPG - Sistema de Gestión de Indicadores Institucionales</div>', unsafe_allow_html=True)
     st.markdown("---")
 
 
@@ -469,12 +469,30 @@ def pagina_reportes(indicadores_list, analisis_list):
                 indicadores_reporte = indicadores_reporte[:top_n_indicadores]
                 analisis_reporte = analisis_reporte[:top_n_indicadores]
                 
-                # Generar reporte (esta función se implementará en el módulo de reportes)
-                ruta_reporte = f"output/reports/{nombre_archivo}.pdf"
+                # Generar PDF en memoria
+                from datetime import datetime
+                pdf_buffer = generar_informe_pdf(
+                    indicadores_reporte,
+                    analisis_reporte,
+                    titulo="Informe de Indicadores MIPG - Alcaldía de Filandia",
+                    incluir_graficos=incluir_graficos,
+                    incluir_estadisticas=incluir_estadisticas
+                )
                 
-                # Por ahora, mostrar mensaje de éxito
+                # Crear nombre de archivo con fecha
+                fecha_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+                nombre_descarga = f"{nombre_archivo}_{fecha_actual}.pdf"
+                
+                # Botón de descarga
+                st.download_button(
+                    label="📥 Descargar Reporte PDF",
+                    data=pdf_buffer,
+                    file_name=nombre_descarga,
+                    mime="application/pdf",
+                    type="primary"
+                )
+                
                 st.success(f"✅ Reporte generado exitosamente")
-                st.info(f"📁 Ruta: {ruta_reporte}")
                 st.balloons()
                 
             except Exception as e:
